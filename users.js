@@ -25,8 +25,8 @@ const addUser = ({id, name}) => {
 const getRooms = () => {
     let rooms = [];
     for (let i = 0; i < users.length ; i++) {
-        const existingRoomIndex = rooms.find(room => room.name === users[i].room)
-        if (existingRoomIndex !== undefined) {
+        const existingRoomIndex = rooms.findIndex(room => room.name === users[i].room)
+        if (existingRoomIndex !== -1) {
             rooms[existingRoomIndex].numberOfPlayers ++;
         } else {
             rooms.push({name:users[i].room, numberOfPlayers : 1});
@@ -86,6 +86,17 @@ const getUsersInRoom = ({room}) => {
     let usersInRoom = users.filter((user) => user.room === room)
     return usersInRoom;
 };
+
+// WinScreen
+
+// // 
+const removeUserFromRoom = (id) =>{
+    const index = users.findIndex(user => user.id === id);
+
+    if (index !== -1) {
+
+    }
+}
 
 // A la déconnexion
 
