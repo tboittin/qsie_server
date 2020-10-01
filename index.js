@@ -4,15 +4,6 @@ const socketio = require("socket.io");
 const http = require("http");
 const cors = require("cors");
 
-const {
-  addUser,
-  removeUser,
-  getUsersInRoom,
-  joinRoom,
-  addCharacter,
-  retrieveOpponentData,
-} = require("./users");
-
 const PORT = process.env.PORT || 5000;
 
 const router = require("./router");
@@ -24,13 +15,27 @@ const io = socketio(server);
 app.use(router);
 app.use(cors());
 
-const getNbOfPlayersInRoom = (room) => {
-  room = room.trim().toLowerCase();
-  let chosenRoom = io.sockets.adapter.rooms[room]
-  let nbOfPlayersInRooms = chosenRoom.length;
-  return nbOfPlayersInRooms;
-}
+const users = [];
 
+// Join
+const addUser = ({ id, name }) => {
+  name = name.trim().toLowerCase();
+
+  const existingUser = users.find((user) => user.name === name);
+
+  if (existingUser) {
+    return { error: "Ce nom est déjà pris, veuillez en choisir un autre" };
+  }
+
+  const user = { id, name };
+
+  console.log('user test log');
+  console.log(user);
+
+  return {user};
+};
+
+// Rooms
 const getRooms = () => {
   let rooms = [];
   let roomsLength = Object.keys(io.sockets.adapter.rooms).length;
@@ -50,27 +55,86 @@ const getRooms = () => {
   return rooms;
 };
 
+const joinRoom = ({ id, name, room }) => {
+  room = room.trim().toLowerCase();
+
+  const roomIsFull = users.filter((user) => user.room === room).length >= 2;
+  if (roomIsFull) {
+    return { error: "Ce salon est déjà plein, veuillez en choisir un autre" };
+  }
+
+  const user = { id, name, room };
+
+  let i = users.findIndex((user) => user.id === id);
+  users[i] = user;
+
+  console.log(users);
+  return { user };
+};
+
+// Choose Character
+const addCharacter = ({ id, clientCharacter }) => {
+  const userIndex = users.findIndex((user) => user.id === id);
+  users[userIndex] = { ...users[userIndex], character: clientCharacter };
+  console.log(users);
+}; //Si ne fonctionne pas, utiliser concat
+
+// Game
+const getNbOfPlayersInRoom = (room) => {
+  room = room.trim().toLowerCase();
+  let chosenRoom = io.sockets.adapter.rooms[room];
+  let nbOfPlayersInRooms = chosenRoom.length;
+  return nbOfPlayersInRooms;
+};
+
+const retrieveOpponentData = ({ id, room }) => {
+  const usersInRoom = users.filter(u => u.room === room);
+  console.log(usersInRoom);
+
+  const otherUser = usersInRoom.filter((userInRoom) => userInRoom.id !== id);
+  let opponentName = otherUser.name;
+  let opponentCharacter = otherUser.character;
+  return { opponentName, opponentCharacter };
+};
+
+// Win Screen
+const removeUserFromRoom = (id) => {
+  const index = users.findIndex((user) => user.id === id);
+
+  if (index !== -1) {
+  }
+};
+
+const removeUser = (id) => {
+  const index = users.findIndex((user) => user.id === id);
+
+  if (index !== -1) {
+    return users.splice(index, 1)[0];
+  }
+};
+
 io.on("connection", (socket) => {
+  
   console.log("a user connected: ", socket.id);
 
   socket.on("login", ({ name }, callback) => {
-    const { error, user } = addUser({ id: socket.id, name }); // TODO faire en sorte de bloquer quand il y a le même nom
+    const { error, user } = addUser({ id: socket.id, name });
     if (error) return callback(error);
-    // io.emit("users", {
-    //   users: getUsers(),
-    // });
+    console.log(user);
+    users.push(user);
+    console.log("users: ");
+    console.log(users);
   });
 
   socket.on("disconnect", () => {
-    const user = removeUser(socket.id);
+    const user = users.filter((u) => u.id === socket.id);
+    removeUser(socket.id);
     console.log("a user disconnected: ", socket.id);
 
-    if (user) {
-      io.to(user.room).emit("message", {
-        user: "admin",
-        text: `${user.name} has left.`,
-      });
-    }
+    io.to(user.room).emit("message", {
+      user: "admin",
+      text: `${user.name} has left.`,
+    });
   });
 
   socket.on("getRooms", () => {
