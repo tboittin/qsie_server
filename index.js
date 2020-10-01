@@ -7,8 +7,6 @@ const cors = require("cors");
 const {
   addUser,
   removeUser,
-  getUser,
-  getUsers,
   getUsersInRoom,
   joinRoom,
   addCharacter,
@@ -26,25 +24,24 @@ const io = socketio(server);
 app.use(router);
 app.use(cors());
 
+const getNbOfPlayersInRoom = (room) => {
+  room = room.trim().toLowerCase();
+  let chosenRoom = io.sockets.adapter.rooms[room]
+  let nbOfPlayersInRooms = chosenRoom.length;
+  return nbOfPlayersInRooms;
+}
+
 const getRooms = () => {
   let rooms = [];
-  let greenRoom = io.sockets.adapter.rooms["green room"];
   let roomsLength = Object.keys(io.sockets.adapter.rooms).length;
-
   for (i = 0; i < roomsLength; i++) {
-    console.log("i = " + i);
-    let nbOfPlayersInRoom = Object.values(io.sockets.adapter.rooms)[i].length;
-    if (nbOfPlayersInRoom === 1) {
+    let nbOfPlayersInRooms = Object.values(io.sockets.adapter.rooms)[i].length;
+    if (nbOfPlayersInRooms === 1) {
       let roomsName = Object.keys(io.sockets.adapter.rooms)[i];
       let roomsId = Object.keys(
         Object.values(io.sockets.adapter.rooms)[i].sockets
       )[0];
       let room = { id: roomsId, name: roomsName };
-      console.log(
-        `is roomsId (${room.id}) different than room.name (${room.name}): ${
-          room.id !== room.name
-        }`
-      );
       if (room.id !== room.name) {
         rooms.push(room);
       }
@@ -86,8 +83,8 @@ io.on("connection", (socket) => {
     console.log(clientCharacter.name + " has been picked in " + room);
     // console.log(`nombre de joueurs : ${getUsersInRoom.length}`); //Changer le nombre de joueurs ici
 
-    if (getUsersInRoom.length === 2) {
-      let({ opponentName, opponentCharacter }) = retrieveOpponentData({
+    if (getNbOfPlayersInRoom(room) === 2) {
+      let { opponentName, opponentCharacter } = retrieveOpponentData({
         id: socket.id,
         room,
       });
@@ -118,12 +115,6 @@ io.on("connection", (socket) => {
 
     socket.leave(socket.id);
     socket.join(user.room);
-
-    // io.to(room).emit("usersinRoom", {
-    //   usersInRoom: getUsersInRoom(room)
-    // });
-
-    getRooms();
   });
 
   socket.on("sendMessage", ({ message, room, name }) => {
