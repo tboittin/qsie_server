@@ -29,9 +29,6 @@ const addUser = ({ id, name }) => {
 
   const user = { id, name };
 
-  console.log('user test log');
-  console.log(user);
-
   return {user};
 };
 
@@ -76,7 +73,6 @@ const joinRoom = ({ id, name, room }) => {
 const addCharacter = ({ id, clientCharacter }) => {
   const userIndex = users.findIndex((user) => user.id === id);
   users[userIndex] = { ...users[userIndex], character: clientCharacter };
-  console.log(users);
 }; //Si ne fonctionne pas, utiliser concat
 
 // Game
@@ -89,11 +85,13 @@ const getNbOfPlayersInRoom = (room) => {
 
 const retrieveOpponentData = ({ id, room }) => {
   const usersInRoom = users.filter(u => u.room === room);
-  console.log(usersInRoom);
 
-  const otherUser = usersInRoom.filter((userInRoom) => userInRoom.id !== id);
+  const otherUser = usersInRoom.filter((userInRoom) => userInRoom.id !== id)[0];
+  console.log('other user');
+  console.log(otherUser)
   let opponentName = otherUser.name;
   let opponentCharacter = otherUser.character;
+  console.log(opponentCharacter, opponentName);
   return { opponentName, opponentCharacter };
 };
 
@@ -142,7 +140,7 @@ io.on("connection", (socket) => {
     socket.emit("rooms", rooms);
   });
 
-  socket.on("characterPicked", ({ clientCharacter, room }) => {
+  socket.on("characterPicked", ({ name, clientCharacter, room }) => {
     addCharacter({ id: socket.id, room, clientCharacter });
     console.log(clientCharacter.name + " has been picked in " + room);
     // console.log(`nombre de joueurs : ${getUsersInRoom.length}`); //Changer le nombre de joueurs ici
@@ -152,7 +150,8 @@ io.on("connection", (socket) => {
         id: socket.id,
         room,
       });
-      io.in(room).emit("startGame", { opponentName, opponentCharacter });
+      socket.emit("startGame", { opponentName, opponentCharacter });
+      socket.to(room).emit("startGame", { name, clientCharacter });
     }
   });
 
@@ -188,7 +187,7 @@ io.on("connection", (socket) => {
   // Enlève le personnage associé au joueur
   socket.on("sendEndGame", (room) => {
     io.to(room).emit("endGame");
-    let usersInRoom = getUsersInRoom(room);
+    let usersInRoom = users.filter(u => u.room === room);
     for (i = 0; i <= usersInRoom.length; i++) {
       let userIndex = users.findIndex(usersInRoom[i]);
       users[userIndex] = { ...rest, character: "" };
