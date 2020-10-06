@@ -29,7 +29,7 @@ const addUser = ({ id, name }) => {
 
   const user = { id, name };
 
-  return {user};
+  return { user };
 };
 
 // Rooms
@@ -84,14 +84,11 @@ const getNbOfPlayersInRoom = (room) => {
 };
 
 const retrieveOpponentData = ({ id, room }) => {
-  const usersInRoom = users.filter(u => u.room === room);
-
+  const usersInRoom = users.filter((u) => u.room === room);
   const otherUser = usersInRoom.filter((userInRoom) => userInRoom.id !== id)[0];
-  console.log('other user');
-  console.log(otherUser)
   let opponentName = otherUser.name;
   let opponentCharacter = otherUser.character;
-  console.log(opponentCharacter, opponentName);
+  // console.log(opponentCharacter, opponentName);
   return { opponentName, opponentCharacter };
 };
 
@@ -112,7 +109,6 @@ const removeUser = (id) => {
 };
 
 io.on("connection", (socket) => {
-  
   console.log("a user connected: ", socket.id);
 
   socket.on("login", ({ name }, callback) => {
@@ -142,7 +138,7 @@ io.on("connection", (socket) => {
 
   socket.on("characterPicked", ({ name, clientCharacter, room }) => {
     addCharacter({ id: socket.id, room, clientCharacter });
-    console.log(clientCharacter.name + " has been picked in " + room);
+    console.log(clientCharacter.name, "has been picked in", room, "by", name);
     // console.log(`nombre de joueurs : ${getUsersInRoom.length}`); //Changer le nombre de joueurs ici
 
     if (getNbOfPlayersInRoom(room) === 2) {
@@ -151,7 +147,12 @@ io.on("connection", (socket) => {
         room,
       });
       socket.emit("startGame", { opponentName, opponentCharacter });
-      socket.to(room).emit("startGame", { name, clientCharacter });
+      socket
+        .to(room)
+        .emit("startGame", {
+          opponentName: name,
+          opponentCharacter: clientCharacter,
+        });
     }
   });
 
@@ -186,17 +187,25 @@ io.on("connection", (socket) => {
 
   // Enlève le personnage associé au joueur
   socket.on("sendEndGame", (room) => {
+    room = room.trim().toLowerCase();
+    console.log("users before");
+    console.log(users);
     io.to(room).emit("endGame");
-    let usersInRoom = users.filter(u => u.room === room);
-    for (i = 0; i <= usersInRoom.length; i++) {
-      let userIndex = users.findIndex(usersInRoom[i]);
-      users[userIndex] = { ...rest, character: "" };
+    let usersInRoom = users.filter((u) => u.room === room);
+    console.log("users in room");
+    console.log(usersInRoom);
+    for (i = 0; i < usersInRoom.length; i++) {
+      let userIndex = users.findIndex((u) => (u.id = usersInRoom[i].id));
+      users[userIndex].character = "";
     }
+    console.log("users after");
+    console.log(users);
   });
 
   // Enlève la room associée au joueur
   socket.on("changeRoom", () => {
-    let userIndex = users.findIndex((user) => id === socket.id);
+    let userIndex = users.findIndex((user) => user.id === socket.id);
+    socket.leave(socket.id);
     users[userIndex].room = "";
   });
 });
