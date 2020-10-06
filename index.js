@@ -73,7 +73,7 @@ const joinRoom = ({ id, name, room }) => {
 const addCharacter = ({ id, clientCharacter }) => {
   const userIndex = users.findIndex((user) => user.id === id);
   users[userIndex] = { ...users[userIndex], character: clientCharacter };
-}; //Si ne fonctionne pas, utiliser concat
+};
 
 // Game
 const getNbOfPlayersInRoom = (room) => {
@@ -88,7 +88,6 @@ const retrieveOpponentData = ({ id, room }) => {
   const otherUser = usersInRoom.filter((userInRoom) => userInRoom.id !== id)[0];
   let opponentName = otherUser.name;
   let opponentCharacter = otherUser.character;
-  // console.log(opponentCharacter, opponentName);
   return { opponentName, opponentCharacter };
 };
 
@@ -106,6 +105,20 @@ const removeUser = (id) => {
   if (index !== -1) {
     return users.splice(index, 1)[0];
   }
+};
+
+const cleanRoom = (room) => {
+  room = room.trim().toLowerCase();
+  let usersInRoom = users.filter((u) => u.room === room);
+  console.log("users in room before");
+  console.log(usersInRoom);
+  for (i = 0; i < users.length; i++) {
+    if (users[i].room === room) {
+      users[i].character = "";
+    }
+  }
+  console.log("users in room after");
+  console.log(usersInRoom);
 };
 
 io.on("connection", (socket) => {
@@ -140,19 +153,18 @@ io.on("connection", (socket) => {
     addCharacter({ id: socket.id, room, clientCharacter });
     console.log(clientCharacter.name, "has been picked in", room, "by", name);
     // console.log(`nombre de joueurs : ${getUsersInRoom.length}`); //Changer le nombre de joueurs ici
-
-    if (getNbOfPlayersInRoom(room) === 2) {
-      let { opponentName, opponentCharacter } = retrieveOpponentData({
-        id: socket.id,
-        room,
-      });
-      socket.emit("startGame", { opponentName, opponentCharacter });
-      socket
-        .to(room)
-        .emit("startGame", {
+    if (room) {
+      if (getNbOfPlayersInRoom(room) === 2) {
+        let { opponentName, opponentCharacter } = retrieveOpponentData({
+          id: socket.id,
+          room,
+        });
+        socket.emit("startGame", { opponentName, opponentCharacter });
+        socket.to(room).emit("startGame", {
           opponentName: name,
           opponentCharacter: clientCharacter,
         });
+      }
     }
   });
 
@@ -188,25 +200,21 @@ io.on("connection", (socket) => {
   // Enlève le personnage associé au joueur
   socket.on("sendEndGame", (room) => {
     room = room.trim().toLowerCase();
-    console.log("users before");
-    console.log(users);
+    cleanRoom(room);
     io.to(room).emit("endGame");
-    let usersInRoom = users.filter((u) => u.room === room);
-    console.log("users in room");
-    console.log(usersInRoom);
-    for (i = 0; i < usersInRoom.length; i++) {
-      let userIndex = users.findIndex((u) => (u.id = usersInRoom[i].id));
-      users[userIndex].character = "";
-    }
-    console.log("users after");
-    console.log(users);
   });
 
   // Enlève la room associée au joueur
-  socket.on("changeRoom", () => {
+  socket.on("changeRoom", (room) => {
     let userIndex = users.findIndex((user) => user.id === socket.id);
-    socket.leave(socket.id);
+    socket.leave(room);
     users[userIndex].room = "";
+    socket.to(room).emit("redirectToRooms");
+    console.log(users);
+  });
+
+  socket.on("redirectedToRooms", (room) => {
+    socket.leave(room);
   });
 });
 
