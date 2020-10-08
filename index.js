@@ -119,22 +119,17 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     const user = users.filter((u) => u.id === socket.id)[0];
-    if (user.room) {
-      console.log("user.room:", user.room);
+    if (user) {
       console.log("a user disconnected: ", socket.id);
-      socket.broadcast
-        .to(user.room)
-        .emit("message", { user: "admin", text: `${user.name} a quitté la partie!` });
+      socket.broadcast.to(user.room).emit("message", {
+        user: "admin",
+        text: `${user.name} a quitté la partie!`,
+      });
       cleanRoom(user.room);
       io.to(user.room).emit("endGame");
       io.to(user.room).emit("redirectToRooms");
+      removeUser(socket.id);
     }
-    removeUser(socket.id);
-  });
-
-  socket.on("disconnecting-message", () => {
-    const user = users.filter((u) => u.id === socket.id);
-    console.log("disconnecting message ", user);
   });
 
   socket.on("getRooms", () => {
@@ -176,9 +171,10 @@ io.on("connection", (socket) => {
       text: `${user.name}, bienvenue !`,
     });
 
-    socket.broadcast
-      .to(user.room)
-      .emit("message", { user: "admin", text: `${user.name} a rejoint la partie!` });
+    socket.broadcast.to(user.room).emit("message", {
+      user: "admin",
+      text: `${user.name} a rejoint la partie!`,
+    });
 
     socket.leave(socket.id);
     socket.join(user.room);
