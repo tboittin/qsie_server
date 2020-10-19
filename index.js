@@ -140,6 +140,9 @@ io.on("connection", (socket) => {
   socket.on("characterPicked", ({ name, clientCharacter, room }) => {
     addCharacter({ id: socket.id, room, clientCharacter });
     console.log(clientCharacter.name, "has been picked in", room, "by", name);
+  });
+
+  socket.on("startGame", ({name, clientCharacter, room}) => {
     if (room) {
       if (getNbOfPlayersInRoom(room) === 2) {
         let { opponentName, opponentCharacter } = retrieveOpponentData({
@@ -153,7 +156,7 @@ io.on("connection", (socket) => {
         });
       }
     }
-  });
+  })
 
   socket.on("joinRoom", ({ name, room }, callback) => {
     const { error, user } = joinRoom({ id: socket.id, name, room });
