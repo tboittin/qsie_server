@@ -19,20 +19,20 @@ const users = [];
 
 // Join
 const existingUser = (name) => {
-  console.log(socket.id, 'existingUser', name);
+  console.log('existingUser', name);
   name = name.trim().toLowerCase();
   const existing = users.find((user) => user.name === name);
   if (existing) {
-    console.log(name, 'existingUser', true)
+    console.log('existingUser', true)
     return true;
   } else {
-    console.log(name, 'existingUser', false)
+    console.log('existingUser', false)
     return false;
   }
 }
 
 const addUser = ( id, name ) => {
-  console.log(socket.id, "addUser");
+  console.log("addUser");
 
   const user = { id, name };
   console.log(user)
@@ -42,7 +42,7 @@ const addUser = ( id, name ) => {
 
 // Rooms
 const getRooms = () => {
-  console.log(socket.id, "getRooms");
+  console.log("getRooms");
   console.log(io.sockets.adapter.rooms);
   console.log(Object.keys(io.sockets.adapter.rooms));
   console.log(users);
@@ -65,7 +65,7 @@ const getRooms = () => {
 };
 
 const joinRoom = ({ id, name, room }) => {
-  console.log(socket.id, "joinRoom");
+  console.log("joinRoom");
   room = room.trim().toLowerCase();
 
   const roomIsFull = users.filter((user) => user.room === room).length >= 2;
@@ -81,7 +81,7 @@ const joinRoom = ({ id, name, room }) => {
 };
 
 const roomLength = (room) => {
-  console.log(socket.id, 'roomLength')
+  console.log('roomLength')
   const roomIsStillAvailable = Object.keys(io.sockets.adapter.rooms).includes(room);
   if (roomIsStillAvailable) {
     room = room.trim().toLowerCase();
@@ -94,14 +94,14 @@ const roomLength = (room) => {
 
 // Choose Character
 const addCharacter = ({ id, clientCharacter }) => {
-  console.log(socket.id, "addCharacter");
+  console.log("addCharacter");
   const userIndex = users.findIndex((user) => user.id === id);
   users[userIndex] = { ...users[userIndex], character: clientCharacter };
 };
 
 // Game
 const getNbOfPlayersInRoom = (room) => {
-  console.log(socket.id, "getNbOfPlayersInRoom");
+  console.log("getNbOfPlayersInRoom");
   room = room.trim().toLowerCase();
   let chosenRoom = io.sockets.adapter.rooms[room];
   let nbOfPlayersInRooms = chosenRoom.length;
@@ -109,7 +109,7 @@ const getNbOfPlayersInRoom = (room) => {
 };
 
 const retrieveOpponentData = ({ id, room }) => {
-  console.log(socket.id, "retrieveOpponentData");
+  console.log("retrieveOpponentData");
   const usersInRoom = users.filter((u) => u.room === room);
   const otherUser = usersInRoom.filter((userInRoom) => userInRoom.id !== id)[0];
   if (otherUser === undefined) {
@@ -126,7 +126,7 @@ const retrieveOpponentData = ({ id, room }) => {
 // Win Screen
 
 const removeUser = (id) => {
-  console.log(socket.id, "removeUser");
+  console.log("removeUser");
   const index = users.findIndex((user) => user.id === id);
   if (index !== -1) {
     return users.splice(index, 1)[0];
@@ -137,50 +137,50 @@ io.on("connection", (socket) => {
   console.log("a user connected: ", socket.id);
 
   socket.on('existingUser', (name) => {
-    console.log(socket.id, 'on existingUser')
+    console.log('on existingUser')
     if (existingUser(name) === false) {
-      console.log(socket.id, 'emitExistingUser', false)
+      console.log('emitExistingUser', false)
       socket.emit('existingUser', false);
     } else {
-      console.log(socket.id, 'emitExistingUser', true)
+      console.log('emitExistingUser', true)
       socket.emit('existingUser', true);
     }
   })
 
   socket.on("login", ( name ) => {
-    console.log(socket.id, 'on login')
+    console.log('on login')
     addUser(socket.id, name);
   });
 
   socket.on("disconnect", () => {
-    console.log(socket.id, 'on disconnect')
+    console.log('on disconnect')
     const user = users.filter((u) => u.id === socket.id)[0];
     console.log("a user disconnected: ", socket.id);
     if (user) {
       removeRoomUsersCharacter(user.room);
-      console.log(socket.id, 'emit to room endgame')
+      console.log('emit to room endgame')
       io.to(user.room).emit("endGame");
-      console.log(socket.id, 'emit to room redirectToRooms')
+      console.log('emit to room redirectToRooms')
       io.to(user.room).emit("redirectToRooms");
       removeUser(socket.id);
     }
   });
 
   socket.on("getRooms", () => {
-    console.log(socket.id, "on getRooms");
+    console.log("on getRooms");
     let rooms = getRooms();
-    console.log(socket.id, 'emit rooms')
+    console.log('emit rooms')
     socket.emit("rooms", rooms);
   });
 
   socket.on("characterPicked", ({ name, clientCharacter, room }) => {
-    console.log(socket.id, 'on characterPicked')
+    console.log('on characterPicked')
     addCharacter({ id: socket.id, room, clientCharacter });
     console.log(clientCharacter.name, "has been picked in", room, "by", name);
   });
 
   socket.on("startGame", ({ name, clientCharacter, room }, callback) => {
-    console.log(socket.id, "on startGame");
+    console.log("on startGame");
     if (room) {
       if (getNbOfPlayersInRoom(room) === 2) {
         console.log("2 players in room");
@@ -192,10 +192,10 @@ io.on("connection", (socket) => {
         );
         if (error) return callback(error);
         
-    console.log(socket.id, "emit startGame");
+    console.log("emit startGame");
         socket.emit("startGame", { opponentName, opponentCharacter });
         
-    console.log(socket.id, "emit to room startGame");
+    console.log("emit to room startGame");
         socket.to(room).emit("startGame", {
           opponentName: name,
           opponentCharacter: clientCharacter,
@@ -206,15 +206,15 @@ io.on("connection", (socket) => {
 
   socket.on('getRoomLength', (room) => {
     
-    console.log(socket.id, "on getRoomLength");
+    console.log("on getRoomLength");
     const length = roomLength(room);
     
-    console.log(socket.id, "emit roomLength");
+    console.log("emit roomLength");
     socket.emit('roomLength', length)
   });
 
   socket.on("joinRoom", ({ name, room }, callback) => {
-    console.log(socket.id, "on joinRoom");
+    console.log("on joinRoom");
     const { error, user } = joinRoom({ id: socket.id, name, room });
     if (error) return callback(error);
 
@@ -240,17 +240,17 @@ io.on("connection", (socket) => {
   });
 
   socket.on("sendMessage", ({ message, room, name }) => {
-    console.log(socket.id, "on sendMessage");
-    console.log(socket.id, "emit to room message");
+    console.log("on sendMessage");
+    console.log("emit to room message");
     io.to(room).emit("message", { user: name, text: message });
   });
 
   // Enlève le personnage associé au joueur
   socket.on("sendEndGame", (room) => {
-    console.log(socket.id, "on sendEndGame");
+    console.log("on sendEndGame");
     room = room.trim().toLowerCase();
     removeRoomUsersCharacter(room);
-    console.log(socket.id, "emit to room endGame");
+    console.log("emit to room endGame");
     io.to(room).emit("endGame");
   });
 
@@ -261,15 +261,15 @@ io.on("connection", (socket) => {
       room,
       name //DEV
     ) => {
-      console.log(socket.id, "on changeRoom");
-      console.log(socket.id, "emit redirectToRooms");
+      console.log("on changeRoom");
+      console.log("emit redirectToRooms");
       socket.to(room).emit("redirectToRooms");
       cleanAtRoom();
     }
   );
 
   socket.on("redirectedToRooms", () => {
-    console.log(socket.id, "on redirectedToRooms");
+    console.log("on redirectedToRooms");
     cleanAtRoom();
     console.log("rooms");
     console.log(Object.keys(io.sockets.adapter.rooms));
@@ -278,15 +278,15 @@ io.on("connection", (socket) => {
   });
 
   socket.on("reinitialize", (name) => {
-    console.log(socket.id, "on reinitialize");
+    console.log("on reinitialize");
     if (name) {
       let userIndex = users.findIndex((user) => user.id === socket.id);
-      console.log(socket.id, "emit to room reinitializeMe");
+      console.log("emit to room reinitializeMe");
       socket.to(users[userIndex].room).emit("reinitilizeMe");
-      console.log(socket.id, "leave room");
+      console.log("leave room");
       socket.leave(users[userIndex].room);
       
-    console.log(socket.id, "join id room");
+    console.log("join id room");
       socket.join(socket.id);
       users[userIndex].name = "";
       users[userIndex].room = "";
@@ -295,20 +295,20 @@ io.on("connection", (socket) => {
   });
 
   const removeAllUsersFromRoom = ( room ) => {
-    console.log(socket.id, "removeAllUsersFromRoom");
+    console.log("removeAllUsersFromRoom");
     
-    console.log(socket.id, "leave room");
+    console.log("leave room");
     socket.leave(room);
     
-    console.log(socket.id, "join id room");
+    console.log("join id room");
     socket.join(socket.id);
-    console.log(socket.id, users);
+    console.log(users);
     let userIndex = users.findIndex((user) => user.id === socket.id);
     users[userIndex].room = socket.id;
   };
 
   const removeRoomUsersCharacter = (room) => {
-    console.log(socket.id, "removeRoomUsersCharacter");
+    console.log("removeRoomUsersCharacter");
     for (i = 0; i < users.length; i++) {
       if (users[i].room === room) {
         users[i].character = "";
@@ -319,7 +319,7 @@ io.on("connection", (socket) => {
   const cleanAtRoom = () => {
     // Enlève le personnage des joueurs de la salle + sors les joueurs de la salle et les fait rejoindre une salle avec leur id
     
-    console.log(socket.id, "cleanAtRoom");
+    console.log("cleanAtRoom");
     let userIndex = users.findIndex((user) => user.id === socket.id);
     let user = users[userIndex];
     removeRoomUsersCharacter(user.room);
