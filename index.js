@@ -18,19 +18,22 @@ app.use(cors());
 const users = [];
 
 // Join
-const addUser = ({ id, name }) => {
-  console.log("addUser");
+const existingUser = (name) => {
   name = name.trim().toLowerCase();
-
-  const existingUser = users.find((user) => user.name === name);
-
-  if (existingUser) {
-    return { error: "Ce nom est déjà pris, veuillez en choisir un autre" };
+  const existing = users.find((user) => user.name === name);
+  if (existing) {
+    return true;
+  } else {
+    return false;
   }
+}
+const addUser = ( id, name ) => {
+  console.log("addUser");
 
   const user = { id, name };
-
-  return { user };
+  console.log('adding User');
+  console.log(user)
+  users.push(user);
 };
 
 // Rooms
@@ -72,6 +75,17 @@ const joinRoom = ({ id, name, room }) => {
   users[i] = user;
   return { user };
 };
+
+const roomLength = (room) => {
+  const roomIsStillAvailable = Object.keys(io.sockets.adapter.rooms).includes(room);
+  if (roomIsStillAvailable) {
+    room = room.trim().toLowerCase();
+    let nbOfPlayersInRoom = io.sockets.adapter.rooms[room].length;
+    return nbOfPlayersInRoom;
+  } else {
+    return 2; //La salle n'est plus disponible
+  }
+}
 
 // Choose Character
 const addCharacter = ({ id, clientCharacter }) => {
@@ -117,11 +131,16 @@ const removeUser = (id) => {
 io.on("connection", (socket) => {
   console.log("a user connected: ", socket.id);
 
-  socket.on("login", ({ name }, callback) => {
-    console.log("login");
-    const { error, user } = addUser({ id: socket.id, name });
-    if (error) return callback(error);
-    users.push(user);
+  socket.on('existingUser', (name) => {
+    if (existingUser(name) === false) {
+      socket.emit('existingUser', false);
+    } else {
+      socket.emit('existingUser', true);
+    }
+  })
+
+  socket.on("login", ( name ) => {
+    addUser(socket.id, name);
   });
 
   socket.on("disconnect", () => {
@@ -165,6 +184,11 @@ io.on("connection", (socket) => {
         });
       }
     }
+  });
+
+  socket.on('getRoomLength', (room) => {
+    const length = roomLength(room);
+    socket.emit('roomLength', length)
   });
 
   socket.on("joinRoom", ({ name, room }, callback) => {
