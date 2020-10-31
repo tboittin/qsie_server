@@ -113,6 +113,8 @@ const retrieveOpponentData = ({ id, room }) => {
   const usersInRoom = users.filter((u) => u.room === room);
   const otherUser = usersInRoom.filter((userInRoom) => userInRoom.id !== id)[0];
   if (otherUser === undefined) {
+    console.log(users);
+    console.log(io.sockets.adapter.rooms);
     return {
       error:
         "Problème lors de la récupération des données de l'adversaire, réessaye plus tard",
